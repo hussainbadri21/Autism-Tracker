@@ -16,7 +16,7 @@ import java.util.TimerTask;
 
 
 public class MainActivity extends ActionBarActivity {
-    SharedPreferences sharedPreferences;
+    static SharedPreferences sharedPreferences;
     private Timer mTimer = null;
     int i;
     private Handler mHandler = new Handler();

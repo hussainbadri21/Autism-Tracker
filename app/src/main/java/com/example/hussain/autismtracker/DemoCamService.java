@@ -3,6 +3,7 @@ package com.example.hussain.autismtracker;
 
 
         import android.Manifest;
+        import android.app.ProgressDialog;
         import android.content.Context;
         import android.content.Intent;
         import android.content.SharedPreferences;
@@ -18,6 +19,13 @@ package com.example.hussain.autismtracker;
         import android.util.Log;
         import android.widget.Toast;
 
+        import com.android.volley.DefaultRetryPolicy;
+        import com.android.volley.Request;
+        import com.android.volley.RequestQueue;
+        import com.android.volley.Response;
+        import com.android.volley.VolleyError;
+        import com.android.volley.toolbox.StringRequest;
+        import com.android.volley.toolbox.Volley;
         import com.androidhiddencamera.CameraConfig;
         import com.androidhiddencamera.CameraError;
         import com.androidhiddencamera.HiddenCameraService;
@@ -26,8 +34,13 @@ package com.example.hussain.autismtracker;
         import com.androidhiddencamera.config.CameraImageFormat;
         import com.androidhiddencamera.config.CameraResolution;
 
+        import org.json.JSONException;
+        import org.json.JSONObject;
+
         import java.io.ByteArrayOutputStream;
         import java.io.File;
+        import java.util.HashMap;
+        import java.util.Map;
         import java.util.Timer;
         import java.util.TimerTask;
 
@@ -196,10 +209,12 @@ public class DemoCamService extends HiddenCameraService {
                     // if(sharedPreferences.getBoolean("cameraValue",false))
 
 
-                    i = Integer.parseInt(sharedPreferences.getString("i","-1"));
-                    Log.e("i ki value",String.valueOf(i));
-                    if(i>=3)
+                    i = Integer.parseInt(sharedPreferences.getString("i", "-1"));
+                    Log.e("i ki value", String.valueOf(i));
+                    if (i >= 3){
                         stopService(new Intent(DemoCamService.this, DemoCamService.class));
+                        senddata();
+                    }
                     else
 
 
@@ -209,5 +224,68 @@ public class DemoCamService extends HiddenCameraService {
 
             });
         }
+    }
+
+    public void senddata()
+    {
+        String url = "http://autismtracker-hariaakash.rhcloud.com/api/user/detectEmotion";
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        if (response != null) {
+                            try {
+                                JSONObject person = new JSONObject(response);
+                                boolean ct = person.getBoolean("status");
+                                Log.e("ct value", Boolean.toString(ct));
+                                if (ct) {
+                                    Log.e("img", "image sent");
+
+                                } else {
+                                    Log.e("img2", "image not sent");
+                                    return;
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                Log.e("Error", e.getMessage());
+                            }
+                            System.out.println(response);
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(error!=null && error.getMessage() !=null){
+                    Toast.makeText(getApplicationContext(),"error VOLLEY "+error.getMessage(),Toast.LENGTH_LONG).show();
+                }
+                else{
+                    Toast.makeText(getApplicationContext(),"Something went wrong",Toast.LENGTH_LONG).show();
+
+                }
+                //mTextView.setText("That didn't work!");
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                String authkey = sharedPreferences.getString("authKey", null);
+                String img1 = sharedPreferences.getString("encodedImage", null);
+                String img2 = sharedPreferences.getString("encodedImage1", null);
+                String img3 = sharedPreferences.getString("encodedImage2", null);
+                params.put("authKey", authkey);
+                params.put("img1",img1);
+                params.put("img2",img2);
+                params.put("img3",img3);
+                Log.i("params of my service", params.toString());
+                return params;
+            }
+        };
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        RequestQueue requestQueue = Volley.newRequestQueue(DemoCamService.this);
+        requestQueue.add(stringRequest);
     }
 }
