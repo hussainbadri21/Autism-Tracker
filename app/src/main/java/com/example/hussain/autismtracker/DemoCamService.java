@@ -271,12 +271,12 @@ public class DemoCamService extends HiddenCameraService {
                 Map<String, String> params = new HashMap<String, String>();
                 String authkey = sharedPreferences.getString("authKey", null);
                 String img1 = sharedPreferences.getString("encodedImage", null);
-                String img2 = sharedPreferences.getString("encodedImage1", null);
-                String img3 = sharedPreferences.getString("encodedImage2", null);
+                //String img2 = sharedPreferences.getString("encodedImage1", null);
+                //String img3 = sharedPreferences.getString("encodedImage2", null);
                 params.put("authKey", authkey);
-                params.put("img1",img1);
-                params.put("img2",img2);
-                params.put("img3",img3);
+                params.put("img",img1);
+                //params.put("img2",img2);
+                //params.put("img3",img3);
                 Log.i("params of my service", params.toString());
                 return params;
             }
