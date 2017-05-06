@@ -1,7 +1,10 @@
 package com.example.hussain.autismtracker;
 
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
@@ -12,12 +15,27 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import butterknife.ButterKnife;
 import butterknife.Bind;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
     private static final int REQUEST_SIGNUP = 0;
+    static SharedPreferences sharedPreferences;
 
     @Bind(R.id.input_email) EditText _emailText;
     @Bind(R.id.input_password) EditText _passwordText;
@@ -54,40 +72,78 @@ public class LoginActivity extends AppCompatActivity {
     public void login() {
         Log.d(TAG, "Login");
 
-        if (!validate()) {
-            onLoginFailed();
-            return;
-        }
+        sharedPreferences = this.getSharedPreferences("text", Context.MODE_PRIVATE);
 
+        String url = "http://autismtracker-hariaakash.rhcloud.com/api/user/login";
 
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject person = new JSONObject(response);
+                            boolean ct = person.getBoolean("status");
+                            Log.e("ct value", Boolean.toString(ct));
+                            if (ct) {
+                                String authKey = person.getString("authKey");
+                                sharedPreferences.edit().putString("authKey",authKey).apply();
+                                _loginButton.setEnabled(false);
 
+                                final ProgressDialog progressDialog = new ProgressDialog(LoginActivity.this,
+                                        R.style.AppTheme_Dark_Dialog);
+                                progressDialog.setIndeterminate(true);
+                                progressDialog.setMessage("Authenticating...");
+                                progressDialog.show();
 
+                                String email = _emailText.getText().toString();
+                                String password = _passwordText.getText().toString();
 
+                                // TODO: Implement your own authentication logic here.
 
-            _loginButton.setEnabled(false);
+                                new android.os.Handler().postDelayed(
+                                        new Runnable() {
+                                            public void run() {
+                                                // On complete call either onLoginSuccess or onLoginFailed
+                                                onLoginSuccess();
+                                                // onLoginFailed();
+                                                progressDialog.dismiss();
+                                            }
+                                        }, 1000);
+                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                startActivity(intent);
 
-            final ProgressDialog progressDialog = new ProgressDialog(LoginActivity.this,
-                    R.style.AppTheme_Dark_Dialog);
-            progressDialog.setIndeterminate(true);
-            progressDialog.setMessage("Authenticating...");
-            progressDialog.show();
-
-            String email = _emailText.getText().toString();
-            String password = _passwordText.getText().toString();
-
-            // TODO: Implement your own authentication logic here.
-
-            new android.os.Handler().postDelayed(
-                    new Runnable() {
-                        public void run() {
-                            // On complete call either onLoginSuccess or onLoginFailed
-                            onLoginSuccess();
-                            // onLoginFailed();
-                            progressDialog.dismiss();
+                            } else {
+                                onLoginFailed();
+                                return;
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Log.e("Error", e.getMessage());
                         }
-                    }, 1000);
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+                        System.out.println(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                //mTextView.setText("That didn't work!");
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("email","hari@gmail.com");
+                params.put("password","hari1234");
+                Log.i("params of my service", params.toString());
+                return params;
+            }
+        };
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
+        requestQueue.add(stringRequest);
+
 
 
     }

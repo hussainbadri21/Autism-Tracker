@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/Autism-Tracker.iml" filepath="$PROJECT_DIR$/Autism-Tracker.iml" />
       <module fileurl="file://$PROJECT_DIR$/AutismTracker.iml" filepath="$PROJECT_DIR$/AutismTracker.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
