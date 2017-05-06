@@ -3,14 +3,18 @@ package com.example.hussain.autismtracker;
 
 
         import android.Manifest;
+        import android.content.Context;
         import android.content.Intent;
+        import android.content.SharedPreferences;
         import android.content.pm.PackageManager;
         import android.graphics.Bitmap;
         import android.graphics.BitmapFactory;
+        import android.os.Handler;
         import android.os.IBinder;
         import android.support.annotation.NonNull;
         import android.support.annotation.Nullable;
         import android.support.v4.app.ActivityCompat;
+        import android.util.Base64;
         import android.util.Log;
         import android.widget.Toast;
 
@@ -22,7 +26,10 @@ package com.example.hussain.autismtracker;
         import com.androidhiddencamera.config.CameraImageFormat;
         import com.androidhiddencamera.config.CameraResolution;
 
+        import java.io.ByteArrayOutputStream;
         import java.io.File;
+        import java.util.Timer;
+        import java.util.TimerTask;
 
 /**
  * Created by Keval on 11-Nov-16.
@@ -31,7 +38,10 @@ package com.example.hussain.autismtracker;
  */
 
 public class DemoCamService extends HiddenCameraService {
-
+    int i;
+    private Timer mTimer = null;
+    private Handler mHandler = new Handler();
+    SharedPreferences sharedPreferences;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,7 +50,8 @@ public class DemoCamService extends HiddenCameraService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(getApplicationContext(),"Smile!",Toast.LENGTH_SHORT);
+        sharedPreferences=DemoCamService.this.getSharedPreferences(getPackageName(), Context.MODE_PRIVATE);
+        //Toast.makeText(getApplicationContext(),"Smile!",Toast.LENGTH_SHORT);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
 
             if (HiddenCameraUtils.canOverDrawOtherApps(this)) {
@@ -57,7 +68,9 @@ public class DemoCamService extends HiddenCameraService {
                     @Override
                     public void run() {
                         Log.i("ffs","Runnable");
+
                         takePicture();
+
                     }
                 }, 1000);
             } else {
@@ -75,12 +88,68 @@ public class DemoCamService extends HiddenCameraService {
     @Override
     public void onImageCapture(@NonNull File imageFile) {
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
-        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
-        //Do something with the bitmap
+        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] imageBytes = baos.toByteArray();
+        String encodedImage = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+        //Log.e("i",String.valueOf(i));
 
-        Log.d("Image capture", imageFile.length() + "");
-        stopSelf();
+            Log.i("Image capture1", encodedImage);
+            Log.e("Image Path",imageFile.getPath());
+        i = Integer.parseInt(sharedPreferences.getString("i","-1"));
+        if(i==0) {
+            Log.d("bc", "0");
+
+            sharedPreferences.edit().putString("encodedImage", encodedImage).apply();
+        }
+        else
+            if(i==1){
+                Log.d("bc", "1");
+
+                sharedPreferences.edit().putString("encodedImage2",encodedImage).apply();}
+        else
+            if(i==2) {
+                Log.d("bc", "2");
+
+                sharedPreferences.edit().putString("encodedImage3", encodedImage).apply();
+            }
+
+
+
+        //Log.i("Image capture", encodedImage);
+      //  Log.e("Image Path",imageFile.getPath());
+
+
+
+            File fdelete = new File(imageFile.getPath());
+            if (fdelete.exists()) {
+                if (fdelete.delete()) {
+                    Log.e("File Deleted", imageFile.getPath());
+
+
+                    if (mTimer != null ) {
+                        mTimer.cancel();
+                        //   sharedPreferences.edit().putString("i","4").apply();
+                    } else {
+                        // recreate new
+                        mTimer = new Timer();
+                        i += 1;
+                        sharedPreferences.edit().putString("i", String.valueOf(i)).apply();
+                    }
+                    // schedule task
+                    mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, 30 * 1000);
+                } else {
+                    Log.e("File not Deleted", imageFile.getPath());
+                }
+            }
+
+
+
+        bitmap.recycle();
+        bitmap=null;
+        imageBytes = null;
+       stopSelf();
     }
 
     @Override
@@ -111,5 +180,34 @@ public class DemoCamService extends HiddenCameraService {
         }
 
         stopSelf();
+    }
+
+    class TimeDisplayTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            // run on another thread
+            mHandler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    // display toast
+                    //Toast.makeText(getApplicationContext(), "Timer Run",Toast.LENGTH_SHORT).show();
+                    // if(sharedPreferences.getBoolean("cameraValue",false))
+
+
+                    i = Integer.parseInt(sharedPreferences.getString("i","-1"));
+                    Log.e("i ki value",String.valueOf(i));
+                    if(i>=3)
+                        stopService(new Intent(DemoCamService.this, DemoCamService.class));
+                    else
+
+
+                        startService(new Intent(DemoCamService.this, DemoCamService.class));
+                    //sendData();
+                }
+
+            });
+        }
     }
 }
