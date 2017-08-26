@@ -28,16 +28,14 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        sharedPreferences=MainActivity.this.getSharedPreferences(getPackageName(), Context.MODE_PRIVATE);
-        sharedPreferences.edit().putString("i","0").apply();
-        if (mTimer != null) {
+       if (mTimer != null) {
             mTimer.cancel();
         } else {
             // recreate new
             mTimer = new Timer();
         }
         // schedule task
-        mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, 3 * 60 * 1000);
+        mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, 10 * 1000);
 
 
     }
@@ -71,7 +69,7 @@ public class MainActivity extends ActionBarActivity {
             // run on another thread
             mHandler.post(new Runnable() {
 
-                @Override
+               @Override
                 public void run() {
                     // display toast
                     //Toast.makeText(getApplicationContext(), "Timer Run",Toast.LENGTH_SHORT).show();

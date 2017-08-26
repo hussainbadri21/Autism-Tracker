@@ -31,6 +31,7 @@ import java.util.Map;
 
 import butterknife.ButterKnife;
 import butterknife.Bind;
+import uk.co.chrisjenx.calligraphy.CalligraphyContextWrapper;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -41,13 +42,17 @@ public class LoginActivity extends AppCompatActivity {
     @Bind(R.id.input_password) EditText _passwordText;
     @Bind(R.id.btn_login) Button _loginButton;
     @Bind(R.id.link_signup) TextView _signupLink;
-    
+    SharedPreferences sharedpreferences;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
-        
+        sharedpreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        _emailText.setText("hari@gmail.com");
+        _passwordText.setText("hari123");
+
         _loginButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -65,16 +70,25 @@ public class LoginActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_SIGNUP);
                 finish();
                 overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+
             }
         });
+    }
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(CalligraphyContextWrapper.wrap(newBase));
     }
 
     public void login() {
         Log.d(TAG, "Login");
 
-        sharedPreferences = this.getSharedPreferences("text", Context.MODE_PRIVATE);
 
-        String url = "http://autismtracker-hariaakash.rhcloud.com/api/user/login";
+
+
+        String url = "http://192.168.43.66:3000/user/login";
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString("authKey","");
+        editor.apply();
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
                 new Response.Listener<String>() {
@@ -86,7 +100,10 @@ public class LoginActivity extends AppCompatActivity {
                             Log.e("ct value", Boolean.toString(ct));
                             if (ct) {
                                 String authKey = person.getString("authKey");
-                                sharedPreferences.edit().putString("authKey",authKey).apply();
+                                Log.e("ak",authKey);
+                                SharedPreferences.Editor editor = sharedpreferences.edit();
+                                editor.putString("authKey",authKey);
+                                editor.apply();
                                 _loginButton.setEnabled(false);
 
                                 final ProgressDialog progressDialog = new ProgressDialog(LoginActivity.this,
@@ -131,8 +148,8 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("email", "hari@gmail.com");
-                params.put("password","hari1234");
+                params.put("email", _emailText.getText().toString());
+                params.put("password",_passwordText.getText().toString());
                 Log.i("params of my service", params.toString());
                 return params;
             }
